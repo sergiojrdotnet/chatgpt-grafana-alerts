@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "chatgpt-grafana-alerts",
+  "version": "0.1.0",
+  "description": "Receive Grafana alerts in ChatGPT through a self-hosted MCP Events server.",
+  "author": { "name": "Sergio Alves Junior" },
+  "repository": "https://github.com/sergiojrdotnet/chatgpt-grafana-alerts",
+  "keywords": ["grafana", "alerts", "monitoring", "mcp", "events"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Grafana Alerts",
+        "shortDescription": "Receive Grafana alerts",
+        "longDescription": "Subscribe to firing and resolved Grafana alert notifications, inspect retained alert history, and check event delivery status through your self-hosted server.",
+        "developerName": "Sergio Alves Junior",
+        "capabilities": ["Read"],
+        "defaultPrompt": [
+          "Help me subscribe to Grafana alerts.",
+          "Show recent Grafana alerts and check my subscription status."
+        ]
+      }
+    }
+  }
+}
