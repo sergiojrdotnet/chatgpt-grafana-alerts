@@ -77,8 +77,26 @@ timestamp, label, or annotation changes produce distinct events.
 
 ## ChatGPT plugin
 
-After deployment, verify the actual MCP endpoint and OAuth flow, then generate
-the package:
+### Cloud connection and Events
+
+After deployment, verify the actual MCP endpoint and OAuth flow. In ChatGPT's
+Plugins directory, use **Add custom MCP server**, configure the deployed HTTPS
+endpoint and OAuth, and create the MCP-backed plugin. Use that generated plugin
+as the single installed entry. Add `plugin/skills/grafana-alerts/SKILL.md` directly
+to it through Plugin Creator's supported App-backed skill update flow, preserving
+the generated App binding and connection configuration.
+
+Confirm that both event definitions appear alongside the tools on the plugin
+page before requesting a subscription. A portable package with a working MCP
+transport does not establish that ChatGPT's cloud Events registry has discovered
+the server. Follow the [connection setup](https://developers.openai.com/plugins/deploy/connect-chatgpt)
+and [Events acceptance](https://developers.openai.com/plugins/build/mcp-events#test-in-chatgpt)
+guides, including refresh after server metadata changes.
+
+### Portable package
+
+For clients that load bundled MCP transports, generate the package with the
+verified deployment endpoint:
 
 ```sh
 MCP_URL=https://your-actual-host/mcp npm run package:plugin
@@ -95,8 +113,12 @@ resource metadata and authorization-server discovery. The generated connection
 contains only its transport and URL because some desktop runtimes reject the
 per-server `extensions` field before attempting OAuth discovery.
 
-Verify that the host loads the bundled MCP server and discovers its tools and
-both event definitions. An installed skill alone does not establish connectivity.
+Verify that the host loads the bundled MCP server and discovers its tools.
+An installed skill alone does not establish connectivity or cloud event-source
+registration.
+
+### Subscribe and verify
+
 Events require a supported Work cloud chat; local Codex tasks cannot create the
 host's callback subscription. In a supported Work cloud chat, ask:
 
