@@ -6,6 +6,8 @@ server, and the ChatGPT plugin source that connects to it.
 - Keep source, documentation, identifiers, and commit subjects in English.
 - Prefer descriptive names and structure over comments explaining the code.
 - Use Conventional Commit subjects.
+- Image pipelines only validate, build, and publish images. Installation and
+  updates are manual VPS operations; never add CI-driven SSH or automatic rollout.
 - Run `npm run check` after behavior changes. Add tests for authentication,
   webhook verification, delivery, replay, and subscription lifecycle changes.
 - Preserve the distinction between webhook receipt and completed agent work.

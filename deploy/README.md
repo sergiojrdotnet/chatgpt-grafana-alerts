@@ -5,6 +5,8 @@ tag matching `package.json` triggers `.github/workflows/release.yml`; the pipeli
 does not SSH into a server, deploy containers, modify Grafana, or configure
 Cloudflare. Installing or updating is an explicit operation inside the VPS.
 
+The initial installation is recorded in [installation evidence](installation.md).
+
 ## VPS topology
 
 Run one Compose project named `chatgpt-grafana-alerts`, independent of the other
