@@ -6,7 +6,8 @@ Complete these checks at the selected deployment before enabling real routing:
 1. Verify HTTPS, OAuth discovery, account linking, required token claims, and
    rejection of an unallowlisted subject.
 2. Confirm ChatGPT discovers the tools and both event definitions through the
-   supported modern MCP protocol. Record actual requests if contract differences
+   supported MCP binding. Test Streamable HTTP initialization and MCP 2.0
+   discovery separately. Record actual requests if contract differences
    appear; resolve them against current canonical documentation.
 3. Subscribe to a filtered firing event in a supported Work cloud chat. Verify
    callback challenge, subscription storage, and expiration.

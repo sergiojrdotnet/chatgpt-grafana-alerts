@@ -17,6 +17,52 @@ test('Production configuration refuses development tokens and requires explicit 
   assert.doesNotThrow(() => loadConfig({ ...env, PUBLIC_URL: '', OAUTH_ISSUER: '', OAUTH_JWKS_URL: '' }));
 });
 
+test('Streamable HTTP clients initialize, acknowledge readiness, and discover tools and events', async t => {
+  const { store, service } = setup();
+  const { server } = createApp(loadConfig(env), service);
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(async () => { await new Promise<void>(resolve => server.close(() => resolve())); store.close(); });
+  const endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}/mcp`;
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', Authorization: `Bearer ${env.DEV_MCP_TOKEN}` };
+  const initialize = { jsonrpc: '2.0', id: 1, method: 'initialize', params: {
+    protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'desktop', version: '1' }
+  } };
+  assert.equal((await fetch(endpoint, { method: 'POST', headers: { ...headers, Authorization: '' }, body: JSON.stringify(initialize) })).status, 401);
+  for (const requested of ['2025-11-25', '2025-06-18', '2025-03-26']) {
+    const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ ...initialize, params: { ...initialize.params, protocolVersion: requested } }) });
+    assert.equal(response.status, 200);
+    const { result } = await response.json() as { result: { protocolVersion: string; capabilities: unknown; serverInfo: { name: string }; resultType?: string } };
+    assert.equal(result.protocolVersion, requested);
+    assert.deepEqual(result.capabilities, { tools: {}, events: {} });
+    assert.equal(result.serverInfo.name, 'chatgpt-grafana-alerts');
+    assert.equal(result.resultType, undefined);
+    const negotiatedHeaders = { ...headers, 'MCP-Protocol-Version': requested };
+    const ready = await fetch(endpoint, { method: 'POST', headers: negotiatedHeaders, body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) });
+    assert.equal(ready.status, 202);
+    assert.equal(await ready.text(), '');
+    const catalog = await fetch(endpoint, { method: 'POST', headers: negotiatedHeaders, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }) });
+    const listed = await catalog.json() as { result: { tools: { name: string }[] } };
+    assert.deepEqual(listed.result.tools.map(tool => tool.name), ['list_alerts', 'get_alert', 'subscription_status']);
+    const events = await fetch(endpoint, { method: 'POST', headers: negotiatedHeaders, body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'events/list' }) });
+    assert.equal(events.status, 200);
+    const definitions = await events.json() as { result: { events: { name: string }[] } };
+    assert.deepEqual(definitions.result.events.map(event => event.name), ['grafana.alert.firing', 'grafana.alert.resolved']);
+    const status = await fetch(endpoint, { method: 'POST', headers: negotiatedHeaders, body: JSON.stringify({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'subscription_status', arguments: {} } }) });
+    assert.equal(status.status, 200);
+    assert.equal((await status.json() as { result: { isError?: boolean } }).result.isError, undefined);
+  }
+  const unsupported = await fetch(endpoint, { method: 'POST', headers: { ...headers, 'MCP-Protocol-Version': 'invalid' }, body: JSON.stringify({ jsonrpc: '2.0', id: 5, method: 'tools/list' }) });
+  assert.equal(unsupported.status, 400);
+  const missingId = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list' }) });
+  assert.equal(missingId.status, 400);
+  const anonymousNotification = await fetch(endpoint, { method: 'POST', headers: { ...headers, Authorization: '' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) });
+  assert.equal(anonymousNotification.status, 401);
+  assert.equal((await fetch(endpoint, { headers: { Origin: 'https://untrusted.example' } })).status, 403);
+  const fallback = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ ...initialize, params: { ...initialize.params, protocolVersion: 'unknown' } }) });
+  assert.equal((await fallback.json() as { result: { protocolVersion: string } }).result.protocolVersion, '2025-11-25');
+});
+
 test('HTTP webhook intake, MCP discovery, authentication, and request metadata validation', async t => {
   const { store, service } = setup();
   let workerReady = true;
