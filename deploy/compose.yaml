@@ -68,7 +68,7 @@ services:
 networks:
   observability:
     external: true
-    name: aluno-expert-net
+    name: ${GRAFANA_NETWORK:?Set GRAFANA_NETWORK to the existing Grafana Docker network}
 volumes:
   alerts-data:
   alerts-backups:

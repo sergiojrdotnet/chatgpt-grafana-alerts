@@ -9,7 +9,8 @@ release_root=$(git rev-parse --show-toplevel)
 [[ $(git -C "$release_root" describe --tags --exact-match HEAD) == "$release_tag" ]] || { echo 'Checkout does not match the release tag' >&2; exit 1; }
 [[ -z $(git -C "$release_root" status --porcelain --untracked-files=no) ]] || { echo 'Release checkout has modified tracked files' >&2; exit 1; }
 expected_revision=$(git -C "$release_root" rev-parse HEAD)
-docker network inspect aluno-expert-net >/dev/null
+export GRAFANA_NETWORK=${GRAFANA_NETWORK:?Set GRAFANA_NETWORK to the existing Grafana Docker network}
+docker network inspect "$GRAFANA_NETWORK" >/dev/null
 test -s /etc/chatgpt-grafana-alerts/server.env
 export IMAGE_DIGEST="$image_digest"
 export SERVER_ENV_FILE=/etc/chatgpt-grafana-alerts/server.env

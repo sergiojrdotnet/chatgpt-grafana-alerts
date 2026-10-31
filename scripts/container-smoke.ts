@@ -23,7 +23,7 @@ try {
     `STORAGE_KEY=${randomBytes(32).toString('base64')}`
   ].join('\n'), { mode: 0o600 });
   const rendered = execFileSync('docker', ['compose', '-p', project, '-f', 'deploy/compose.yaml', 'config', '--format', 'json'], {
-    cwd: root, encoding: 'utf8', env: { ...process.env, IMAGE_DIGEST: image, SERVER_ENV_FILE: envPath }
+    cwd: root, encoding: 'utf8', env: { ...process.env, IMAGE_DIGEST: image, SERVER_ENV_FILE: envPath, GRAFANA_NETWORK: project }
   });
   const config = JSON.parse(rendered);
   config.services['grafana-alerts'].ports = [{ target: 3000, host_ip: '127.0.0.1', protocol: 'tcp' }];

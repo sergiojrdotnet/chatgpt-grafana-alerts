@@ -4,6 +4,8 @@ This repository contains a self-hosted Grafana webhook receiver, an MCP Events
 server, and the ChatGPT plugin source that connects to it.
 
 - Keep source, documentation, identifiers, and commit subjects in English.
+- Keep this repository reusable. Deployment-specific hostnames, account details,
+  network names, and installation evidence belong outside the repository.
 - Prefer descriptive names and structure over comments explaining the code.
 - Use Conventional Commit subjects.
 - Image pipelines only validate, build, and publish images. Installation and

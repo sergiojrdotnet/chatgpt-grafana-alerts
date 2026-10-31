@@ -5,15 +5,14 @@ tag matching `package.json` triggers `.github/workflows/release.yml`; the pipeli
 does not SSH into a server, deploy containers, modify Grafana, or configure
 Cloudflare. Installing or updating is an explicit operation inside the VPS.
 
-The initial installation is recorded in [installation evidence](installation.md).
-
 ## VPS topology
 
 Run one Compose project named `chatgpt-grafana-alerts`, independent of the other
-projects on the server. `compose.yaml` attaches the application to the existing
-`aluno-expert-net` network with alias `grafana-alerts`. Grafana can send signed
-webhooks to `http://grafana-alerts:3000/webhooks/grafana/aluno-expert` when
-`SOURCE_ID=aluno-expert`. That URL stays inside the Docker network. Grafana's
+projects on the server. Set `GRAFANA_NETWORK` in the operator's shell to Grafana's
+existing Docker network. `compose.yaml` attaches the application to that network
+with alias `grafana-alerts`. Grafana can send signed webhooks to
+`http://grafana-alerts:3000/webhooks/grafana/production` when
+`SOURCE_ID=production`. That URL stays inside the Docker network. Grafana's
 `localhost` points to its own container and must not be used for this destination.
 
 The application publishes only `127.0.0.1:8002`. The host's `cloudflared` can reach
@@ -79,14 +78,19 @@ and scope `alerts:read`. Supported algorithms are RS256, ES256, and EdDSA.
 cd /srv/chatgpt-grafana-alerts
 git fetch origin --tags
 git checkout --detach vX.Y.Z
+export GRAFANA_NETWORK=grafana-net
 bash deploy/release.sh vX.Y.Z ghcr.io/sergiojrdotnet/chatgpt-grafana-alerts@sha256:ACTUAL_DIGEST
 ```
 
-Replace the illustrative version and digest with the real published release.
+Replace the illustrative version, digest, and network with the actual deployment
+values. `GRAFANA_NETWORK` is a Compose setting supplied by the shell, separate
+from the application settings in `server.env`.
 The helper requires a clean tagged checkout and immutable digest, verifies the
 image's source revision label, pulls images, and waits for both services to be
 healthy. It records the deployed tag, revision, digest, and time under
 `/etc/chatgpt-grafana-alerts/release.json`. Nothing in CI calls this helper.
+Keep installation evidence and environment-specific configuration outside this
+repository; use [deployment acceptance](../docs/acceptance.md) for validation.
 
 The helper attempts to restore the prior image if startup fails, or stops the
 initial project while preserving volumes. Image rollback does not restore
