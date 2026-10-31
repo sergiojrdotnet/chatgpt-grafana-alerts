@@ -49,7 +49,17 @@ test('HTTP webhook intake, MCP discovery, authentication, and request metadata v
   } } };
   const discovery = await fetch(`${base}/mcp`, { method: 'POST', headers: rpcHeaders, body: JSON.stringify(body) });
   assert.equal(discovery.status, 200);
-  assert.deepEqual((await discovery.json() as { result: { capabilities: unknown } }).result.capabilities, { tools: {}, events: {} });
+  const discovered = await discovery.json() as { result: { capabilities: unknown; ttlMs: number; cacheScope: string } };
+  assert.deepEqual(discovered.result.capabilities, { tools: {}, events: {} });
+  assert.ok(Number.isFinite(discovered.result.ttlMs) && discovered.result.ttlMs >= 0, 'MCP discovery requires a nonnegative numeric ttlMs');
+  assert.equal(discovered.result.cacheScope, 'private');
+  const catalog = await fetch(`${base}/mcp`, { method: 'POST', headers: { ...rpcHeaders, 'Mcp-Method': 'tools/list' }, body: JSON.stringify({ ...body, method: 'tools/list' }) });
+  assert.equal(catalog.status, 200);
+  const { result } = await catalog.json() as { result: { resultType: string; ttlMs: number; cacheScope: string; tools: { name: string }[] } };
+  assert.equal(result.resultType, 'complete');
+  assert.ok(Number.isFinite(result.ttlMs) && result.ttlMs >= 0, 'MCP tool catalogs require a nonnegative numeric ttlMs');
+  assert.equal(result.cacheScope, 'private');
+  assert.deepEqual(result.tools.map(tool => tool.name), ['list_alerts', 'get_alert', 'subscription_status']);
   const mismatch = await fetch(`${base}/mcp`, { method: 'POST', headers: { ...rpcHeaders, 'Mcp-Method': 'tools/list' }, body: JSON.stringify(body) });
   assert.equal(mismatch.status, 400);
   assert.equal((await mismatch.json() as { error: { code: number } }).error.code, -32020);

@@ -21,6 +21,11 @@ method, and `params`. Modern clients supply these mirrored headers:
 rejected. The endpoint rejects supplied origins other than its configured
 public origin. Legacy-only clients cannot connect to this adapter.
 
+`server/discover` and `tools/list` include the required `ttlMs` and `cacheScope`
+fields from the [MCP result schema](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2026-07-28/schema.ts).
+They use `ttlMs: 0` and `cacheScope: private`, so clients may fetch fresh catalogs
+and must not reuse them across authorization contexts.
+
 ## Methods
 
 | Method | Behavior |
