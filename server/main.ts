@@ -8,11 +8,13 @@ process.umask(0o077);
 const config = loadConfig();
 const store = new Store(config.DATABASE_PATH, config.storageKey);
 const service = new AlertService(store, config.SOURCE_ID, postCallback);
-const { server, authorized } = createApp(config, service);
+let lastWorkerSuccess = Date.now();
+const { server, authorized } = createApp(config, service, () => Date.now() - lastWorkerSuccess < 120_000);
 let running: Promise<void> | undefined;
 const timer = setInterval(() => {
   if (running) return;
-  running = service.deliver(authorized).catch(error => console.error('Delivery worker failed', error instanceof Error ? error.message : 'Unknown error'))
+  running = service.deliver(authorized).then(() => { lastWorkerSuccess = Date.now(); })
+    .catch(error => console.error('Delivery worker failed', error instanceof Error ? error.message : 'Unknown error'))
     .finally(() => { running = undefined; });
 }, 1000);
 server.listen(config.PORT, config.HOST, () => console.log(`chatgpt-grafana-alerts listening on ${config.HOST}:${config.PORT}`));
@@ -21,9 +23,13 @@ async function shutdown() {
   if (stopping) return;
   stopping = true;
   clearInterval(timer);
+  const deadline = setTimeout(() => process.exit(1), 20_000);
+  deadline.unref();
   await new Promise<void>(resolve => server.close(() => resolve()));
+  server.closeIdleConnections();
   await running;
   store.close();
+  clearTimeout(deadline);
 }
 process.on('SIGINT', () => { void shutdown(); });
 process.on('SIGTERM', () => { void shutdown(); });

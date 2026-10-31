@@ -1,0 +1,32 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, copyFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
+import { snapshot } from '../server/backup.ts';
+import { Store } from '../server/store.ts';
+import { normalize } from '../server/domain.ts';
+import { AlertService } from '../server/service.ts';
+import { notification, principal, source, subscription } from './helpers.ts';
+
+test('A live SQLite backup restores alert history and encrypted subscriptions with the same key', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'alerts-backup-'));
+  const path = join(directory, 'source.sqlite');
+  const key = randomBytes(32);
+  const store = new Store(path, key);
+  const service = new AlertService(store, source, async (_sub, payload) => ({ status: 200, body: JSON.stringify(payload) }));
+  const sub = await service.subscribe(principal, subscription());
+  store.ingest(normalize(source, notification()));
+  const file = await snapshot(path, join(directory, 'backups'));
+  store.ingest(normalize(source, notification('resolved')));
+  const restored = new Store(file, key);
+  assert.equal(restored.highWater(), 1);
+  assert.equal(restored.subscription(sub.id)!.secret, store.subscription(sub.id)!.secret);
+  restored.close();
+  const wrongKeyPath = join(directory, 'wrong-key.sqlite');
+  await copyFile(file, wrongKeyPath);
+  assert.throws(() => new Store(wrongKeyPath, randomBytes(32)), /does not match/);
+  store.close();
+  await rm(directory, { recursive: true });
+});

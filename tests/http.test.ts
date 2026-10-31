@@ -19,11 +19,16 @@ test('Production configuration refuses development tokens and requires explicit 
 
 test('HTTP webhook intake, MCP discovery, authentication, and request metadata validation', async t => {
   const { store, service } = setup();
-  const { server } = createApp(loadConfig(env), service);
+  let workerReady = true;
+  const { server } = createApp(loadConfig(env), service, () => workerReady);
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(async () => { await new Promise<void>(resolve => server.close(() => resolve())); store.close(); });
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  assert.equal((await fetch(`${base}/readyz`)).status, 200);
+  workerReady = false;
+  assert.equal((await fetch(`${base}/readyz`)).status, 503);
+  workerReady = true;
   const payload = JSON.stringify(notification());
   const signedAt = Math.floor(Date.now() / 1000).toString();
   const headers = {

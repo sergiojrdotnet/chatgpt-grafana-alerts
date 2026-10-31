@@ -1,0 +1,74 @@
+name: chatgpt-grafana-alerts
+services:
+  grafana-alerts:
+    image: ${IMAGE_DIGEST:?An immutable IMAGE_DIGEST is required}
+    env_file:
+      - ${SERVER_ENV_FILE:-/etc/chatgpt-grafana-alerts/server.env}
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3000'
+      DATABASE_PATH: /app/data/alerts.sqlite
+    ports:
+      - 127.0.0.1:8002:3000
+    networks:
+      observability:
+        aliases:
+          - grafana-alerts
+    volumes:
+      - alerts-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    stop_grace_period: 25s
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+  backup:
+    image: ${IMAGE_DIGEST:?An immutable IMAGE_DIGEST is required}
+    command: [node, server/backup.ts]
+    environment:
+      DATABASE_PATH: /app/data/alerts.sqlite
+      BACKUP_PATH: /app/backups
+    network_mode: none
+    volumes:
+      - alerts-data:/app/data:ro
+      - alerts-backups:/app/backups
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    restart: unless-stopped
+    depends_on:
+      grafana-alerts:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('node:fs');process.exit(Date.now()-Number(fs.readFileSync('/tmp/last-backup','utf8'))<25200000?0:1)"]
+      interval: 1m
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: local
+      options:
+        max-size: 5m
+        max-file: '2'
+networks:
+  observability:
+    external: true
+    name: aluno-expert-net
+volumes:
+  alerts-data:
+  alerts-backups:

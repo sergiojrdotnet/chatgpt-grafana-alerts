@@ -34,7 +34,18 @@ export class Store {
         next_attempt INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL DEFAULT 'active', last_error TEXT,
         revision INTEGER NOT NULL DEFAULT 1
       );
+      CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     `);
+    const existing = this.db.prepare("SELECT value FROM metadata WHERE key='storage-key'").get();
+    const check = createHmac('sha256', key).update('chatgpt-grafana-alerts:storage-key').digest('hex');
+    if (existing && existing.value !== check) {
+      this.db.close();
+      throw new Error('STORAGE_KEY does not match this database');
+    }
+    if (!existing) {
+      this.subscriptions();
+      this.db.prepare("INSERT INTO metadata(key,value) VALUES ('storage-key',?)").run(check);
+    }
   }
 
   close() { this.db.close(); }

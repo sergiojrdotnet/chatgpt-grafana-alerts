@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-grafana-alerts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.ts",
     "check": "npm run typecheck && npm test",
-    "package:plugin": "node scripts/package-plugin.ts"
+    "package:plugin": "node scripts/package-plugin.ts",
+    "test:container": "node scripts/container-smoke.ts"
   },
   "dependencies": {
     "ipaddr.js": "^2.5.0",

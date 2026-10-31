@@ -6,7 +6,7 @@ host and operate yourself.
 The initial implementation includes signed webhook intake, SQLite persistence,
 firing/resolved events, filtered subscriptions, verified callbacks, signed
 delivery, bounded retries, and replay. It includes a plugin skill and a packaging
-command. It has **not been deployed or validated against a live ChatGPT account**.
+command. Live ChatGPT subscription delivery requires a separate acceptance test.
 
 ```mermaid
 flowchart LR
@@ -49,8 +49,8 @@ Callback destinations still require publicly routable HTTPS in development.
 
 ## Production configuration
 
-See [deployment](deploy/README.md) for the external OAuth provider, HTTPS proxy,
-storage volume, and environment requirements. The first version supports **one
+See [deployment](deploy/README.md) for Cloudflare Access or external OAuth,
+the HTTPS proxy, storage volumes, and environment requirements. The server supports **one
 configured Grafana source**. Every allowlisted OAuth subject can read that
 source's retained alert history; subscriptions and their status are owner-scoped.
 
@@ -115,8 +115,9 @@ they do not query Grafana metrics, silence alerts, or change infrastructure.
 - Subscription grants last up to one hour, bounded by the requested lifetime
   and the authenticating token's expiration. Even a no-expiry request receives
   a finite grant. Expired subscriptions stop delivering until renewed.
-- Events are retained without automatic pruning in this initial version. Plan
-  disk monitoring and backups. There is no retention/deletion API yet.
+- Events are retained without automatic pruning. The backup service takes a
+  consistent SQLite snapshot every six hours and retains seven local snapshots.
+  Preserve the matching encryption key separately; offsite backup is not configured.
 - The server cannot replay alerts it never received from Grafana. It cannot
   guarantee when ChatGPT will resubscribe after a prolonged outage.
 - A successful callback means ChatGPT accepted the event, not that a task ran
@@ -127,10 +128,17 @@ they do not query Grafana metrics, silence alerts, or change infrastructure.
 ## Validation
 
 `npm run check` runs strict TypeScript checking and the complete local test suite.
-Tests exercise HTTP intake, authentication, filtering, replay, retries, refresh
-races, expiry, restart durability, and callback address rejection. Callback
-responses in service tests are simulated; live DNS/TLS delivery, the container,
-OAuth provider setup, and ChatGPT behavior require deployment validation.
+Tests exercise HTTP intake, OAuth and Cloudflare assertion authentication,
+filtering, replay, retries, refresh races, expiry, backup restoration, restart
+durability, and callback address rejection. `npm run test:container` validates the
+production image in an isolated Compose project, including signed intake,
+forged-assertion rejection, restart persistence, and backup from a read-only mount.
+Callback responses in service tests are simulated; live DNS/TLS delivery,
+provider setup, and ChatGPT behavior require deployment validation.
+
+Version tags trigger a GitHub Actions pipeline that validates, builds, and
+publishes the image to GHCR. It does not install or update anything on the VPS.
+Installation and updates are manual operations inside the VPS.
 
 See [protocol details](docs/protocol.md) and [deployment acceptance](docs/acceptance.md).
 

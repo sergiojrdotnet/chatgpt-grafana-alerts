@@ -1,0 +1,30 @@
+name: Release image
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  packages: write
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Verify release version
+        run: node -e "if('v'+require('./package.json').version!==process.env.GITHUB_REF_NAME)process.exit(1)"
+      - name: Build and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY}"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build --pull --file deploy/Dockerfile --tag "$image:$GITHUB_REF_NAME" --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" --label "org.opencontainers.image.revision=$GITHUB_SHA" .
+          CONTAINER_IMAGE="$image:$GITHUB_REF_NAME" npm run test:container
+          docker push "$image:$GITHUB_REF_NAME"
+          docker image inspect "$image:$GITHUB_REF_NAME" --format '{{json .RepoDigests}}' >> "$GITHUB_STEP_SUMMARY"
