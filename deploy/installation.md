@@ -74,13 +74,12 @@ At 2026-10-31 09:21:13 UTC, Cloudflare capability synchronization succeeded:
 readback preserved per-user OAuth for this upstream, optional Code Mode, and the
 existing Grafana and ERPNext mappings, which remained ready with 65 and 13 tools.
 
-The current ChatGPT connection still selects only Grafana and ERPNext. Its
-single-server selection tool returned an inconsistent not-found response while
-listing Grafana Alerts as available. A new server-selection flow was opened for
-the user instead. Enable Grafana Alerts at `https://mcp.aluno.expert` and complete
-its per-user OAuth grant, then refresh the tool catalog and verify authenticated
-reads. Successful administrator capability synchronization does not prove that
-this user's connected session can call the upstream.
+After the user completed Portal server selection on 2026-10-31 UTC, the connected
+ChatGPT catalog exposed Grafana Alerts alongside Grafana and ERPNext. All three
+upstream tools succeeded through that connection: `list_alerts` returned the two
+synthetic installation events, `get_alert` retrieved the matching synthetic
+firing event, and `subscription_status` returned an empty subscription list.
+These checks establish authenticated upstream tool access through the Portal.
 
 Cloudflare's [Portal documentation](https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/)
 describes tool/prompt synchronization and modern MCP support. It does not
@@ -92,11 +91,10 @@ so it did not reach an authenticated Events compatibility test.
 
 ## Remaining acceptance
 
-ChatGPT session selection and per-user OAuth, authenticated Portal tool reads,
-event discovery, subscription forwarding, signed callback delivery to ChatGPT,
-renewal, and long-outage recovery still need end-to-end validation. At the initial
-installation's final check, there were zero active user subscriptions and only
-the two synthetic test events.
+Portal event discovery, subscription forwarding, signed callback delivery to
+ChatGPT, renewal, and long-outage recovery still need end-to-end validation. The
+connected user's subscription list was empty at the tool-access check, and the
+history read returned only the two synthetic installation events.
 
 Grafana's existing file-provisioned contact points and notification routing were
 not changed. Offsite backup is not configured; the seven rotating snapshots are
