@@ -46,12 +46,37 @@ Python user agent. The same client passed after using its truthful application
 identifier, `chatgpt-grafana-alerts/0.2.0 (installation validation)`. No Browser
 Integrity Check setting, WAF rule, or Access policy was relaxed.
 
+## Aluno Expert MCP Portal
+
+On 2026-10-31 UTC, the protected origin was registered as the `grafana-alerts`
+upstream in the existing `aluno-expert` Portal at `https://mcp.aluno.expert`.
+Its mapping requires per-user OAuth (`on_behalf: true`) and enables discovered
+tools by default. The Access application includes the Portal destination and
+allows its `https://mcp.aluno.expert/servers-callback` OAuth redirect. The existing
+Grafana and ERPNext mappings and the Portal's optional Code Mode were preserved.
+
+Configuration readback reported `waiting`, `authentication_status: required`,
+and no discovered tools. Initial administrator OAuth consent is still required:
+in Cloudflare Zero Trust, open Access controls > MCP Portals > MCP servers,
+edit Grafana Alerts, and select Authenticate server. After consent, synchronize
+capabilities and verify the three history/status tools through the Portal using
+the intended user's OAuth session. The current connected Aluno Expert tool
+catalog still exposes only Grafana and ERPNext.
+
+Cloudflare's [Portal documentation](https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/)
+describes tool/prompt synchronization and modern MCP support. It does not
+establish forwarding of this server's draft Events methods. Portal event
+discovery and subscription forwarding remain unverified; a configuration entry
+or successful tool discovery alone is not event-delivery acceptance. A direct
+Portal probe using a CLI Access session received HTTP `401` (`invalid_token`),
+so it did not reach an authenticated Events compatibility test.
+
 ## Remaining acceptance
 
-The upstream has not yet been added to the Aluno Expert MCP Portal. Portal event
-discovery, subscription forwarding, signed callback delivery to ChatGPT, renewal,
-and long-outage recovery still need end-to-end validation. At the final check,
-there were zero active user subscriptions and only the two synthetic test events.
+Initial Portal OAuth, authenticated tool reads, event discovery, subscription
+forwarding, signed callback delivery to ChatGPT, renewal, and long-outage recovery
+still need end-to-end validation. At the installation's final check, there were
+zero active user subscriptions and only the two synthetic test events.
 
 Grafana's existing file-provisioned contact points and notification routing were
 not changed. Offsite backup is not configured; the seven rotating snapshots are
