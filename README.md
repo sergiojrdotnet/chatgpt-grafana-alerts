@@ -89,8 +89,16 @@ the endpoint-specific `mcp.json`. The packaging command does not deploy the
 server, verify the endpoint, install a plugin, or publish a directory listing.
 Do not use the illustrative hostname above as a real connection.
 
-Connect the server through ChatGPT's custom MCP server flow and install the
-plugin. Verify that events are discovered. In a supported Work cloud chat, ask:
+The plugin bundles the remote MCP connection with its skill. Authenticate that
+connection using the host's OAuth flow. The server must advertise protected
+resource metadata and authorization-server discovery. The generated connection
+contains only its transport and URL because some desktop runtimes reject the
+per-server `extensions` field before attempting OAuth discovery.
+
+Verify that the host loads the bundled MCP server and discovers its tools and
+both event definitions. An installed skill alone does not establish connectivity.
+Events require a supported Work cloud chat; local Codex tasks cannot create the
+host's callback subscription. In a supported Work cloud chat, ask:
 
 > Subscribe to critical firing and resolved alerts from the advertised source.
 > Summarize each matching alert and notify me when it resolves.

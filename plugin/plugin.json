@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "chatgpt-grafana-alerts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Receive Grafana alerts in ChatGPT through a self-hosted MCP Events server.",
   "author": {
     "name": "Sergio Alves Junior"
