@@ -18,8 +18,7 @@ await writeFile(resolve(output, 'mcp.json'), JSON.stringify({
   $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json',
   mcpServers: {
     'grafana-alerts': {
-      type: 'streamable-http', url: endpoint,
-      extensions: { 'com.openai': { auth: { type: 'oauth' } } }
+      type: 'streamable-http', url: endpoint
     }
   }
 }, null, 2) + '\n');
