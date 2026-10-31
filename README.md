@@ -1,5 +1,10 @@
 # chatgpt-grafana-alerts
 
+This experimental implementation is retired and retained as historical source.
+Use [chatgpt-alerts](https://github.com/sergiojrdotnet/chatgpt-alerts) for new
+installations. Its integration adapters support Grafana without coupling the
+core alert model and delivery service to one provider.
+
 Receive Grafana alert notifications in ChatGPT through an MCP Events server you
 host and operate yourself.
 
